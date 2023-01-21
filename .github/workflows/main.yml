@@ -1,0 +1,37 @@
+name: NetSlutter
+on: workflow_dispatch
+env:
+      NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-hours: 9999999999
+    steps:
+    - name: Download Ngrok & Launcher
+      run: |
+        Invoke-WebRequest https://github.com/bittier/rdp-gratis/raw/main/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Invoke-WebRequest https://github.com/bittier/rdp-gratis/raw/main/start.bat -OutFile start.bat
+        Invoke-WebRequest https://github.com/bittier/rdp-gratis/raw/main/wallpaper.png -OutFile wallpaper.png
+        Invoke-WebRequest https://github.com/bittier/rdp-gratis/raw/main/wallpaper.bat -OutFile wallpaper.bat
+        Invoke-WebRequest https://github.com/bittier/rdp-gratis/raw/main/loop.bat -OutFile loop.bat
+        Invoke-WebRequest https://github.com/bittier/rdp-gratis/raw/main/Node.js.lnk -OutFile Node.js.lnk
+        Invoke-WebRequest https://github.com/bittier/rdp-gratis/raw/main/Visual%20Studio%202019.lnk -OutFile 'Visual Studio 2019.lnk'
+    - name: Extracting Ngrok File
+      run: Expand-Archive ngrok.zip
+    - name: Connect To Ngrok Account
+      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+    - name: Turn on Access RDP
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+        copy wallpaper.png D:\a\wallpaper.png
+        copy wallpaper.bat D:\a\wallpaper.bat
+        copy Node.js.lnk C:\Users\Public\Desktop\Node.js.lnk
+        copy "Visual Studio 2019.lnk" "C:\Users\Public\Desktop\Visual Studio 2019.lnk"
+    - name: Make Tunnel
+      run: Start-Process Powershell -ArgumentList '-Noexit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
+    - name: Connect To Your RDP CPU 2 Core, 7GB Ram, and 256 SSD
+      run: cmd /c start.bat
+    - name: Successfully Created! You Can Close Tabs Now
+      run: cmd /c loop.bat
